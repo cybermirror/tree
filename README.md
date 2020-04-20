@@ -3,6 +3,9 @@ Python script to simulate tree command in window terminal with more interesting 
 
 This Python script support command line options. Without options, just list content of current folders on screen.
 Use
+
 python3 tree.py -h
-(or in Window termina, use "python tree.py -h")
+
+(or in Window terminal, use "python tree.py -h")
+
 to list all the available options.
