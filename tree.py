@@ -7,7 +7,7 @@ import argparse
 
 # get_dirlist scans the current_dir using path_obj.iterdir() (available from pathlib) and
 # construct the directory tree recursively using ├ , ─ , └ characters
-# and a list of the tree will be returned
+# get_dirlist is iterable constructor
 #
 # current_dir : the current directory to be scanned
 # depth : number of sub-levels to be included in directory tree. When depth=1, will discontinue sub-directory scan
@@ -16,7 +16,7 @@ import argparse
 # indent_space : the repetition before and after ├ (that is space and ─) for construction of next_indent. Minimum
 #     is 1, default is 3. It is also equal to size of indent for each subdirectory
 # folder_only : =True if only directory is shown in result
-# include_period : incldue files with . as prefix (usually hidden). Default is False
+# exclude_file_prefix : excldue files with prefix found in exclude_file_prefix. Default is ".@"
 # prefix_dir_char : The prefix character add before the folder name. Default is the folder emoji
 # prefix_file_char : The prefix character add before non-folder name. Default is memo emoji.
 
@@ -27,24 +27,24 @@ def get_dirlist(current_dir,
                 indent_space=2,
                 indent_prefix="",
                 folder_only=False,
-                include_period=False,
+                exclude_file_prefix=".@",
                 prefix_dir_char="\N{OPEN FILE FOLDER}",
                 prefix_file_char="\N{MEMO} "):
 
     result_list = []
 
     if folder_only:
-        if include_period:
+        if exclude_file_prefix == "":
             subitem_total = sum(1 for n in current_dir.iterdir() if n.is_dir())
         else:
             subitem_total = sum(1 for n in current_dir.iterdir()
-                                if n.is_dir() and (not n.name.startswith(".")))
+                                if n.is_dir() and (n.name[0] not in exclude_file_prefix))
     else:
-        if include_period:
+        if exclude_file_prefix == "":
             subitem_total = sum(1 for n in current_dir.iterdir())
         else:
             subitem_total = sum(1 for n in current_dir.iterdir()
-                                if (not n.name.startswith(".")))
+                                if (n.name[0] not in exclude_file_prefix))
 
     if indent_space < 1:
         indent_space = 1
@@ -56,8 +56,9 @@ def get_dirlist(current_dir,
     for subitem in current_dir.iterdir():
         if folder_only and (not subitem.is_dir()):
             continue
-        if (not include_period) and subitem.name.startswith("."):
-            continue
+        if (exclude_file_prefix != ""):
+            if subitem.name[0] in exclude_file_prefix:
+                continue
         subitem_count += 1
         # Construct the next level indent string,
         # and if this directory is the end of folder
@@ -79,20 +80,19 @@ def get_dirlist(current_dir,
             else:
                 leading_char = ""
             # print(f"{indent}{leading_char}{subitem.name}")
-            result_list.append(f"{indent}{leading_char}{subitem.name}\n")
-
+            # result_list.append(f"{indent}{leading_char}{subitem.name}\n")
+            yield f"{indent}{leading_char}{subitem.name}\n"
             # Recursively scan sub-directory
             if subitem.is_dir():
-                result_list.extend(get_dirlist(subitem,
-                                               depth-1,
-                                               next_indent,
-                                               indent_space,
-                                               indent_prefix,
-                                               folder_only,
-                                               include_period,
-                                               prefix_dir_char,
-                                               prefix_file_char))
-    return result_list
+                yield from get_dirlist(subitem,
+                                       depth-1,
+                                       next_indent,
+                                       indent_space,
+                                       indent_prefix,
+                                       folder_only,
+                                       exclude_file_prefix,
+                                       prefix_dir_char,
+                                       prefix_file_char)
 
 
 my_parser = argparse.ArgumentParser(
@@ -163,6 +163,12 @@ args = my_parser.parse_args()
 input_path = Path(args.path)
 full_path = input_path.resolve(strict=False)
 
+if args.period:
+    exclude_fp = ""
+else:
+    exclude_fp = ".@"
+
+
 if args.emoji:
     folder_char = "\N{OPEN FILE FOLDER}"
     file_char = "\N{MEMO}"
@@ -194,7 +200,7 @@ else:
                                 indent_space=args.indent,
                                 indent_prefix="",
                                 folder_only=args.folderonly,
-                                include_period=args.period,
+                                exclude_file_prefix=exclude_fp,
                                 prefix_dir_char=folder_char,
                                 prefix_file_char=file_char):
             print(line, end="")
