@@ -1,5 +1,7 @@
+from datetime import datetime
 from pathlib import Path
 import argparse
+
 
 # This Python script supports command line options using standard module argparse
 # Type python tree.py -h to get the list of options.
@@ -30,8 +32,6 @@ def get_dirlist(current_dir,
                 exclude_file_prefix=".@",
                 prefix_dir_char="\N{OPEN FILE FOLDER}",
                 prefix_file_char="\N{MEMO} "):
-
-    result_list = []
 
     if folder_only:
         if exclude_file_prefix == "":
@@ -218,18 +218,20 @@ else:
             output_file = f"{original_file}_{n:03}{ext}"
             n += 1
 
+        now = datetime.now()
         print(f"\nWriting folder tree to file {str(output_file)}")
 
         with open(output_file, mode="w", encoding="utf-8-sig") as f:
             f.write(
                 f"Directory list of {args.path} upto {args.depth} sub-level(s)\n")
-            f.write(f"List folder only : {args.folderonly}\n\n")
+            f.write(f"List folder only : {args.folderonly}\n")
+            f.write(f"Date of listing: {now.strftime('%Y-%m-%d %I:%M %p')}\n")
             f.write(f"{str(full_path)}\n")
             f.writelines(get_dirlist(input_path, args.depth, indent="",
                                      indent_space=args.indent,
                                      indent_prefix=delimiter,
                                      folder_only=args.folderonly,
-                                     include_period=args.period,
+                                     exclude_file_prefix=exclude_fp,
                                      prefix_dir_char=folder_char,
                                      prefix_file_char=file_char))
         print(
